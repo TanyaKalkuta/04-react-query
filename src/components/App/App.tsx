@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import ReactPaginate from 'react-paginate';
 import css from './App.module.css';
 import SearchBar from '../SearchBar/SearchBar';
-import { Toaster } from 'react-hot-toast';
+import { toast, Toaster } from 'react-hot-toast';
 import fetchMovies from '../../services/movieService';
 import Loader from '../Loader/Loader';
 import ErrorMessage from '../ErrorMessage/ErrorMessage';
@@ -32,7 +32,14 @@ function App() {
     queryKey: ['movies', query, page],
     queryFn: () => fetchMovies(query, page),
     enabled: query.trim() !== '', // ❗ запит не робиться, поки немає query
+    placeholderData: keepPreviousData,
   });
+
+  useEffect(() => {
+    if (data && data.results.length === 0 && query.trim() !== '') {
+      toast.error('No movies found for your request.');
+    }
+  }, [data, query]);
 
   const handleSearch = (value: string) => {
     console.log('Searching for:', value);
@@ -46,13 +53,14 @@ function App() {
       <SearchBar onSubmit={handleSearch} />
       {isLoading && <Loader />}
       {isError && <ErrorMessage />}
+
       {data?.results && (
         <MovieGrid movies={data.results} onSelect={openModal} />
       )}
+
       {isModalOpen && selectedMovie && (
         <MovieModal movie={selectedMovie} onClose={closeModal} />
       )}
-
       {/* ПАГІНАЦІЯ РЕНДЕРИТЬСЯ ТІЛЬКИ КОЛИ Є БІЛЬШЕ 1 СТОРІНКИ */}
       {data?.total_pages && data.total_pages > 1 && (
         <ReactPaginate
