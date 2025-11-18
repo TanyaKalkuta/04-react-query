@@ -28,7 +28,7 @@ function App() {
     setSelectedMovie(null);
   };
 
-  const { data, isError, isLoading } = useQuery({
+  const { data, isError, isLoading, isFetching, isSuccess } = useQuery({
     queryKey: ['movies', query, page],
     queryFn: () => fetchMovies(query, page),
     enabled: query.trim() !== '', // ❗ запит не робиться, поки немає query
@@ -36,10 +36,10 @@ function App() {
   });
 
   useEffect(() => {
-    if (data && data.results.length === 0 && query.trim() !== '') {
+    if (isSuccess && query.trim() !== '' && data.results.length === 0) {
       toast.error('No movies found for your request.');
     }
-  }, [data, query]);
+  }, [isSuccess, data, query]);
 
   const handleSearch = (value: string) => {
     console.log('Searching for:', value);
@@ -51,10 +51,10 @@ function App() {
   return (
     <div className={css.app}>
       <SearchBar onSubmit={handleSearch} />
-      {isLoading && <Loader />}
+      {(isLoading || isFetching) && <Loader />}
       {isError && <ErrorMessage />}
 
-      {data?.results && (
+      {isSuccess && data?.results?.length > 0 && (
         <MovieGrid movies={data.results} onSelect={openModal} />
       )}
 
@@ -62,7 +62,7 @@ function App() {
         <MovieModal movie={selectedMovie} onClose={closeModal} />
       )}
       {/* ПАГІНАЦІЯ РЕНДЕРИТЬСЯ ТІЛЬКИ КОЛИ Є БІЛЬШЕ 1 СТОРІНКИ */}
-      {data?.total_pages && data.total_pages > 1 && (
+      {isSuccess && data?.total_pages > 1 && (
         <ReactPaginate
           pageCount={data.total_pages ?? 0}
           pageRangeDisplayed={5}
